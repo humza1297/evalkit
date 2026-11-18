@@ -4,7 +4,7 @@ This file tracks progress so work survives session limits. Tick `[x]` only when 
 **Resuming in a new session:** read `PLAN.md` and this file, then continue from the first unchecked item.
 Conventions: package `evalkit/`, Python 3.11+ (dev box has 3.14), venv at `.venv/`, tests via `.venv\Scripts\python -m pytest -q`. Open every file with `encoding="utf-8"`.
 
-**Last verified green at:** Phase 3 + final review fixes (58 tests passing). The final fixes: calibration joins on the response key so labels survive rescoring; resume retries failed responses and keeps hardware info; `refusal` scores only unanswerable cases, and the correctness rubric ranks "don't know" (2) above a wrong answer (1); a scorer-version hash flags scoring-code changes in diffs. Next: real Ollama run (waits for user approval of about 13 GB of model pulls). Phases 4–5 are on hold (hosted keys / multimodal deferred by user)
+**Last verified green at:** Phase 3 + final review fixes (58 tests passing). The final fixes: calibration joins on the response key so labels survive rescoring; resume retries failed responses and keeps hardware info; `refusal` scores only unanswerable cases, and the correctness rubric ranks "don't know" (2) above a wrong answer (1); a scorer-version hash flags scoring-code changes in diffs. Smoke run against real Ollama models done; repo at https://github.com/humza1297/evalkit. Next: full comparison run (needs about 11 GB more of model pulls, user approval). Phases 4–5 are on hold (hosted keys / multimodal deferred by user)
 
 ## Phase 0: Scaffolding
 - [x] `pyproject.toml` (core deps: pyyaml, numpy; extras `pdf`=pypdf, `docx`=python-docx; dev: pytest), `.gitignore` (.venv, runs, clients, cache)
@@ -47,11 +47,16 @@ Conventions: package `evalkit/`, Python 3.11+ (dev box has 3.14), venv at `.venv
 - [x] Embedding `query_prefix`/`doc_prefix` (nomic-embed-text needs `search_query: `/`search_document: `)
 - [x] Refusal regex narrowed; report shows max prompt tokens (context truncation hint)
 - [x] PLAN.md config example matches the real schema
-- [ ] Real run against Ollama (needs the user's approval to `ollama pull`, about 13 GB total; a smoke test needs only llama3.2:3b + nomic-embed-text, about 2.3 GB). On the first real run:
-  - hand-check the refusal column on about 20 outputs
-  - add a twin target without `query_prefix`/`doc_prefix` and compare `retrieval_hit` (sources disagree on whether Ollama adds nomic prefixes)
-  - confirm the hardware column shows "measured" and that qwen3 `<think>` output is stripped
-  - check whether max prompt tokens hits a context ceiling
+- [x] Smoke run against Ollama (`evalkit.smoke.yaml`: llama3.2:3b + nomic-embed-text, 4 targets × 18 cases, 2026-11-17). Results:
+  - 0 target errors and 0 judge parse errors. Real chat and embeddings work through the OpenAI-compatible client
+  - hardware "measured (ollama ps)": 2.6 GB at Q4_K_M. Max prompt was 627 tokens against Ollama's 4096 context, so no truncation
+  - refusal: all 3 unanswerable cases correctly declined; no false refusals on the 15 answerable cases
+  - **3B judge is unreliable.** All 8 faithfulness scores below 0.75 were wrong (verbatim-correct answers called "invented"). Use llama3.1:8b or larger as judge and run `calibrate` before trusting rankings
+  - prefix question **unresolved.** retrieval_hit is 1.0 for every target because the corpus is too small (5 docs, top_k 4) to discriminate. Needs a bigger corpus
+  - latency noise: identical-config targets differed 2.5 s vs 4.7 s p50 on the laptop GPU. Consider repeated measurements before trusting latency gaps
+- [ ] Full comparison run (`evalkit.ollama.yaml`; pull qwen3:4b, gemma3:4b, llama3.1:8b, about 11 GB more). Confirm qwen3 `<think>` output is stripped
+- [ ] Larger example corpus (20+ docs) so retrieval settings can be told apart
+- [ ] Optional: repeat-N latency measurement to reduce laptop GPU noise
 
 ## Phase 2: Pipelines & selection
 - [x] Hardware-fit column (`core/hardware.py`: measured via Ollama `/api/ps` right after each target's pass, else `/api/show` or name-based estimate; `budgets.vram_gb` flags "too big"). The live Ollama path is untested until models are pulled
