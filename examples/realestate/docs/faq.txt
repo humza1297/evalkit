@@ -1,0 +1,14 @@
+Harbor Point Realty: Client FAQ
+(Fictional sample data for evalkit demos.)
+
+Do you help first-time buyers?
+Yes. We run a free first-time buyer workshop on the first Tuesday of every month at 6pm.
+
+Do you handle rentals?
+Yes. Our property management team manages long-term rentals. The management fee is 8 percent of monthly rent, plus a leasing fee of half of one month's rent for each new tenant.
+
+Can I tour a home virtually?
+Yes. Every Harbor Point listing includes a 3D tour, and agents can do live video walkthroughs on request.
+
+Which areas do you serve?
+We serve Bayview, Old Harbor, Kestrel Heights and the Northshore district.

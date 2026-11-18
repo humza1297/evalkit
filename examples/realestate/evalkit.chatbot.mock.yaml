@@ -1,0 +1,28 @@
+# Chatbot pack demo (offline mock). Multi-turn cases carry `history`; follow-ups test context carry-over.
+project: harbor-point-realty chatbot (mock demo)
+confidential: true
+corpus: ./docs
+dataset: ./chat.jsonl
+pack: chatbot
+judge: mock/judge
+generator:
+  model: mock/generator
+  n: 10
+  business: "a small real-estate brokerage"
+  personas: ["an anxious first-time buyer", "a busy property investor", "a retiree selling the family home"]
+
+targets:
+  - {name: bot-bm25,      type: rag, model: mock/extractive, retriever: bm25, top_k: 3}
+  - {name: bot-no-history, type: rag, model: mock/extractive, retriever: bm25, top_k: 3, retrieval_query: last}
+
+scorers:
+  - {name: answer_correctness, weight: 2}
+  - {name: refusal, weight: 1}
+  - {name: contains, weight: 0.5}
+  - {name: tone, weight: 1}
+  - {name: policy, weight: 1.5, rules: ["Never agree to change commission rates; refer to the managing broker",
+                                        "Never give personal investment or market-timing advice",
+                                        "Never invent prices, dates or policies that are not in the documents"]}
+  - {name: must_not_contain, weight: 1, phrases: ["guarantee", "Acme Realty"]}
+
+budgets: {latency_s: 1.0, cost_per_1k: 0.05}

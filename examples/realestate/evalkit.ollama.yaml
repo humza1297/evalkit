@@ -1,0 +1,32 @@
+# Real comparison with local Ollama models, sized for an 8 GB GPU.
+# One-time setup (about 13 GB of downloads; check tags at https://ollama.com/library):
+#   ollama pull llama3.2:3b
+#   ollama pull qwen3:4b
+#   ollama pull gemma3:4b
+#   ollama pull llama3.1:8b        # judge
+#   ollama pull nomic-embed-text   # embeddings
+# Then: evalkit check examples/realestate/evalkit.ollama.yaml
+#
+# Context: Ollama's default context window may be smaller than top_k x chunk_size + prompt.
+# If the report's "Max prompt tok" column sits at a round number, raise the context window
+# (e.g. the OLLAMA_CONTEXT_LENGTH env var for `ollama serve`) or lower top_k/chunk_size.
+project: harbor-point-realty
+confidential: true
+corpus: ./docs
+dataset: ./eval.jsonl
+pack: rag
+judge: ollama/llama3.1:8b
+generator: {model: ollama/llama3.1:8b, n: 20, business: "a small real-estate brokerage", persona: "a home seller or buyer"}
+concurrency: 1              # one GPU: sequential calls keep latency numbers honest
+
+targets:
+  - {name: llama3.2-3b, type: rag, model: ollama/llama3.2:3b, retriever: hybrid, embedder: ollama/nomic-embed-text,
+     query_prefix: "search_query: ", doc_prefix: "search_document: ", top_k: 4}
+  - {name: qwen3-4b,    type: rag, model: ollama/qwen3:4b,    retriever: hybrid, embedder: ollama/nomic-embed-text,
+     query_prefix: "search_query: ", doc_prefix: "search_document: ", top_k: 4, max_tokens: 2048}
+  - {name: gemma3-4b,   type: rag, model: ollama/gemma3:4b,   retriever: hybrid, embedder: ollama/nomic-embed-text,
+     query_prefix: "search_query: ", doc_prefix: "search_document: ", top_k: 4}
+  - {name: llama3.2-3b-bm25, type: rag, model: ollama/llama3.2:3b, retriever: bm25, top_k: 4}
+
+weights: {quality: 0.7, latency: 0.2, cost: 0.1}
+budgets: {latency_s: 4.0, min_quality: 0.5}

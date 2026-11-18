@@ -1,0 +1,23 @@
+# Smoke test against real local models (~2.3 GB): llama3.2:3b + nomic-embed-text.
+#   ollama pull llama3.2:3b
+#   ollama pull nomic-embed-text
+# The judge is the same 3B model, so judge scores are weak and self-biased. This run checks
+# the plumbing (real calls, embeddings, hardware, prefixes), not which model is best.
+project: harbor-point-realty (smoke)
+confidential: true
+corpus: ./docs
+dataset: ./eval.jsonl
+pack: rag
+judge: ollama/llama3.2:3b
+concurrency: 1
+
+targets:
+  - {name: hybrid-prefixed, type: rag, model: ollama/llama3.2:3b, retriever: hybrid, embedder: ollama/nomic-embed-text,
+     query_prefix: "search_query: ", doc_prefix: "search_document: ", top_k: 4}
+  - {name: embed-prefixed,  type: rag, model: ollama/llama3.2:3b, retriever: embedding, embedder: ollama/nomic-embed-text,
+     query_prefix: "search_query: ", doc_prefix: "search_document: ", top_k: 4}
+  - {name: embed-noprefix,  type: rag, model: ollama/llama3.2:3b, retriever: embedding, embedder: ollama/nomic-embed-text, top_k: 4}
+  - {name: bm25,            type: rag, model: ollama/llama3.2:3b, retriever: bm25, top_k: 4}
+
+weights: {quality: 0.7, latency: 0.2, cost: 0.1}
+budgets: {latency_s: 4.0, min_quality: 0.5, vram_gb: 8}
